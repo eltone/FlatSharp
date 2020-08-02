@@ -27,71 +27,85 @@ namespace BenchmarkCore
     using FlatSharp.Attributes;
     using FlatSharp.Unsafe;
 
-    [MediumRunJob]
+    [ShortRunJob]
     public class Program
     {
-        const int GuidCount = 100;
-
-        private static readonly byte[] buffer = new byte[10 * 1024 * 1024];
-        private static SimpleVector<string> nonSharedVector;
-        private static SimpleVector<SharedString> sharedVector;
-
-        private static SpanWriter sharedWriter;
-        private static SpanWriter llWriter;
+        private Dictionary<SharedString, SharedString> hashtable;
+        private SharedString[] array;
+        private LinkedList<SharedString> linkedList;
 
         public static void Main(string[] args)
         { 
             BenchmarkRunner.Run<Program>();
         }
 
-        [Params(true, false)]
-        public bool RandomDistribution { get; set; }
-
-        [Params(1, 10, 50, 100, 500)]
-        public int LruLookupSize { get; set; }
+        [Params(1, 2, 4, 8)]
+        public int ArrayLength { get; set; }
 
         [GlobalSetup]
         public void GlobalSetup()
         {
-            sharedWriter = new SpanWriter(new LruSharedStringWriter(LruLookupSize));
-            llWriter = new SpanWriter(new LruSharedStringWriter(10));
+            this.array = new SharedString[ArrayLength];
+            this.hashtable = new Dictionary<SharedString, SharedString>(ArrayLength);
+            this.linkedList = new LinkedList<SharedString>();
 
-            Random rng = new Random();
-            var guids = Enumerable.Range(0, GuidCount).Select(i => Guid.NewGuid().ToString()).ToList();
-
-            nonSharedVector = new SimpleVector<string>
+            for (int i = 0; i < ArrayLength; ++i)
             {
-                Items = Enumerable.Range(0, 1000).Select(i => guids[rng.Next(0, guids.Count)]).ToList()
-            };
-
-            if (!this.RandomDistribution)
-            {
-                nonSharedVector.Items = Enumerable.Range(0, 1000).Select(i => guids[NextGaussianInt(rng, 0, guids.Count - 1)]).ToList();
+                string guid = Guid.NewGuid().ToString();
+                this.array[i] = guid;
+                this.hashtable[guid] = guid;
+                this.linkedList.AddLast(guid);
             }
-
-            sharedVector = new SimpleVector<SharedString> { Items = nonSharedVector.Items.Select(SharedString.Create).ToList() };
-
-            Console.WriteLine($"{nameof(SharedStringLinkedList)} = {this.SharedStringLinkedList()}");
-            Console.WriteLine($"{nameof(SharedStringLRU)} = {this.SharedStringLRU()}");
-            Console.WriteLine($"{nameof(NonSharedString)} = {this.NonSharedString()}");
         }
 
         [Benchmark]
-        public int SharedStringLinkedList()
+        public void Search_HashTable()
         {
-            return FlatBufferSerializer.Default.Serialize(sharedVector, buffer, llWriter);
+            var array = this.array;
+            var ht = this.hashtable;
+            for (int i = 0; i < array.Length; ++i)
+            {
+                ht.TryGetValue(array[i], out var str);
+            }
         }
 
         [Benchmark]
-        public int SharedStringLRU()
+        public void Search_Array()
         {
-            return FlatBufferSerializer.Default.Serialize(sharedVector, buffer, sharedWriter);
+            var array = this.array;
+            for (int i = 0; i < array.Length; ++i)
+            {
+                string needle = array[i];
+                for (int j = 0; j < array.Length; ++j)
+                {
+                    if (array[j] == needle)
+                    {
+                        break;
+                    }
+                }
+            }
         }
 
+
         [Benchmark]
-        public int NonSharedString()
+        public void Search_LinkedList()
         {
-            return FlatBufferSerializer.Default.Serialize(nonSharedVector, buffer, SpanWriter.Instance);
+            var array = this.array;
+            var linkedList = this.linkedList;
+            for (int i = 0; i < array.Length; ++i)
+            {
+                var head = linkedList.First;
+                string needle = array[i];
+                while (head != null)
+                {
+                    if (head.Value == needle)
+                    {
+                        break;
+                    }
+
+                    head = head.Next;
+                }
+            }
         }
 
         [FlatBufferTable]

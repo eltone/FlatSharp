@@ -37,7 +37,9 @@ namespace FlatSharpTests
             };
 
             byte[] destination = new byte[1024];
-            int bytesWritten = FlatBufferSerializer.Default.Serialize(t, destination, new SpanWriter(new LruSharedStringWriter(5)));
+            int bytesWritten = FlatBufferSerializer.Default.Serialize(
+                t, destination,
+                new SpanWriter(5));
 
             byte[] expectedBytes = new byte[]
             {
@@ -75,7 +77,7 @@ namespace FlatSharpTests
             };
 
             byte[] destination = new byte[1024];
-            int sharedBytesWritten = FlatBufferSerializer.Default.Serialize(t, destination, new SpanWriter(new LruSharedStringWriter(5)));
+            int sharedBytesWritten = FlatBufferSerializer.Default.Serialize(t, destination, new SpanWriter(5));
 
             byte[] expectedBytes = new byte[]
             {
@@ -112,7 +114,10 @@ namespace FlatSharpTests
             byte[] destination = new byte[1024];
 
             int maxBytes = FlatBufferSerializer.Default.GetMaxSize(t);
-            int sharedBytesWritten = FlatBufferSerializer.Default.Serialize(t, destination, new SpanWriter(new LruSharedStringWriter(5)));
+            int sharedBytesWritten = FlatBufferSerializer.Default.Serialize(
+                t, 
+                destination,
+                new SpanWriter(new SharedStringWriter(new JumerLru<string, LinkedList<int>>(2))));
 
             Assert.IsTrue(sharedBytesWritten <= maxBytes);
 
@@ -146,7 +151,7 @@ namespace FlatSharpTests
             };
 
             byte[] destination = new byte[1024];
-            int sharedBytesWritten = FlatBufferSerializer.Default.Serialize(t, destination, new SpanWriter(new LruSharedStringWriter(5)));
+            int sharedBytesWritten = FlatBufferSerializer.Default.Serialize(t, destination, new SpanWriter(5));
 
             byte[] expectedBytes = new byte[]
             {
@@ -177,7 +182,7 @@ namespace FlatSharpTests
             };
 
             byte[] destination = new byte[1024];
-            int sharedBytesWritten = FlatBufferSerializer.Default.Serialize(t, destination, new SpanWriter(new LruSharedStringWriter(5)));
+            int sharedBytesWritten = FlatBufferSerializer.Default.Serialize(t, destination, new SpanWriter(5));
 
             byte[] expectedBytes = new byte[]
             {
@@ -208,7 +213,10 @@ namespace FlatSharpTests
             };
 
             byte[] destination = new byte[1024];
-            int sharedBytesWritten = FlatBufferSerializer.Default.Serialize(t, destination, new SpanWriter(new LruSharedStringWriter(1)));
+            int sharedBytesWritten = FlatBufferSerializer.Default.Serialize(
+                t, 
+                destination,
+                new SpanWriter(new SharedStringWriter(new JumerLru<string, LinkedList<int>>(1))));
 
             byte[] expectedBytes = new byte[]
             {
@@ -247,7 +255,7 @@ namespace FlatSharpTests
             };
 
             byte[] destination = new byte[1024];
-            int sharedBytesWritten = FlatBufferSerializer.Default.Serialize(t, destination, new SpanWriter(new LruSharedStringWriter(2)));
+            int sharedBytesWritten = FlatBufferSerializer.Default.Serialize(t, destination, new SpanWriter(2));
 
             byte[] expectedBytes = new byte[]
             {

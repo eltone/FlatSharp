@@ -17,6 +17,7 @@
 namespace FlatSharp
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
@@ -30,6 +31,8 @@ namespace FlatSharp
         internal static readonly Encoding Encoding = new UTF8Encoding(false);
         internal const byte True = 1;
         internal const byte False = 0;
+
+        public ICache<int, SharedString> SharedStringLruCache = new LruCache<int, SharedString>(100);
 
         #region Defined Methods
 
@@ -45,17 +48,31 @@ namespace FlatSharp
             checked
             {
                 // Strings are stored by reference.
-                offset += this.ReadUOffset(offset);
-                int numberOfBytes = (int)this.ReadUInt(offset);
-
-                return this.ReadStringProtected(offset + sizeof(int), numberOfBytes, Encoding);
+                return this.ReadStringFromAbsoluteOffset(offset + this.ReadUOffset(offset));
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private string ReadStringFromAbsoluteOffset(int absoluteOffset)
+        {
+            int numberOfBytes = (int)this.ReadUInt(absoluteOffset);
+            return this.ReadStringProtected(absoluteOffset + sizeof(int), numberOfBytes, Encoding);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public virtual SharedString ReadSharedString(int offset)
         {
-            return this.ReadString(offset);
+            offset += this.ReadUOffset(offset);
+
+            var lookup = this.SharedStringLruCache;
+            if (lookup.TryGet(offset, out SharedString str))
+            {
+                return str;
+            }
+
+            str = this.ReadStringFromAbsoluteOffset(offset);
+            lookup.Insert(offset, str);
+            return str;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

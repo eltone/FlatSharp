@@ -18,6 +18,7 @@ namespace FlatSharp
 {
     using System;
     using System.Buffers.Binary;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
@@ -38,7 +39,12 @@ namespace FlatSharp
         /// <summary>
         /// Initializes a new SpanWriter using default settings.
         /// </summary>
-        public SpanWriter() : this (new LruSharedStringWriter(100))
+        public SpanWriter() : this(100)
+        {
+        }
+
+        public SpanWriter(int sharedStringCacheCapacity)
+            : this(new SharedStringWriter(new LruCache<string, LinkedList<int>>(sharedStringCacheCapacity)))
         {
         }
 

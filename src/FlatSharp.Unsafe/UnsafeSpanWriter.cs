@@ -17,12 +17,13 @@
 namespace FlatSharp.Unsafe
 {
     using System;
+    using System.Collections.Generic;
     using System.Runtime.CompilerServices;
     using System.Text;
 
     public sealed unsafe class UnsafeSpanWriter : SpanWriter
     {
-        public UnsafeSpanWriter() : this(new LruSharedStringWriter(100))
+        public UnsafeSpanWriter() : this(new SharedStringWriter(new LruCache<string, LinkedList<int>>(100)))
         {
         }
 

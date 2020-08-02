@@ -24,13 +24,12 @@ namespace FlatSharp
     /// </summary>
     public class SharedString : IEquatable<SharedString>
     {
-        private readonly int hashCode;
+        private int? hashCode;
         private readonly string str;
 
         private SharedString(string str)
         {
             this.str = str;
-            this.hashCode = str.GetHashCode();
         }
 
         public static SharedString Create(string str)
@@ -43,13 +42,21 @@ namespace FlatSharp
             return new SharedString(str);
         }
 
-        public int HashCode => this.hashCode;
-
         public string String => this.str;
 
         public bool Equals(SharedString other) => StaticEquals(this, other);
 
-        public override int GetHashCode() => this.hashCode;
+        public override int GetHashCode()
+        {
+            if (this.hashCode != null)
+            {
+                return this.hashCode.Value;
+            }
+
+            var hc = this.str.GetHashCode();
+            this.hashCode = hc;
+            return hc;
+        }
 
         public override bool Equals(object obj)
         {
@@ -82,7 +89,7 @@ namespace FlatSharp
                 return false;
             }
 
-            return x.hashCode == y.hashCode &&
+            return x.GetHashCode() == y.GetHashCode() &&
                    x.str == y.str;
         }
     }
